@@ -19,6 +19,9 @@ param runtimeVersion string = '3.11'
 @description('App settings')
 param appSettings object = {}
 
+@description('Startup command')
+param startupCommand string = 'gunicorn --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 app:app'
+
 var appSettingsArray = [for key in objectKeys(appSettings): {
   name: key
   value: appSettings[key]
@@ -36,6 +39,7 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
     httpsOnly: true
     siteConfig: {
       linuxFxVersion: '${toUpper(runtimeName)}|${runtimeVersion}'
+      appCommandLine: startupCommand
       appSettings: appSettingsArray
       ftpsState: 'Disabled'
       minTlsVersion: '1.2'

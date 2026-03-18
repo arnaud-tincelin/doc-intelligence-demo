@@ -7,3 +7,7 @@ services:
     project: ./src/backend
     language: py
     host: appservice
+    hooks:
+      prepackage:
+        shell: sh
+        run: cp -r ../frontend ./frontend

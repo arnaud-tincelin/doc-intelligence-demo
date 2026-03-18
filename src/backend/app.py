@@ -96,7 +96,10 @@ analysis_store: dict[str, AnalysisResult] = {}
 @app.get("/", response_class=HTMLResponse)
 async def root():
     """Serve the frontend."""
-    frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html")
+    # Check deployed path first (frontend copied during packaging), then dev path
+    frontend_path = os.path.join(os.path.dirname(__file__), "frontend", "index.html")
+    if not os.path.exists(frontend_path):
+        frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html")
     if os.path.exists(frontend_path):
         return FileResponse(frontend_path)
     return HTMLResponse("<h1>Electrical Schema Analyzer API</h1><p>Visit /docs for API docs.</p>")
@@ -344,7 +347,9 @@ async def get_analysis(image_id: str):
     return analysis_store[image_id]
 
 
-# Mount static files for frontend
-frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
+# Mount static files for frontend - check deployed path first, then dev path
+frontend_dir = os.path.join(os.path.dirname(__file__), "frontend")
+if not os.path.isdir(frontend_dir):
+    frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
 if os.path.isdir(frontend_dir):
     app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
