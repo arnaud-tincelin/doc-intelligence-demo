@@ -4,5 +4,6 @@
   "aiFoundryHub": "aihub-",
   "aiFoundryProject": "aiproj-",
   "containerAppsEnvironment": "cae-",
-  "containerApps": "ca-"
+  "containerApps": "ca-",
+  "containerRegistry": "cr"
 }

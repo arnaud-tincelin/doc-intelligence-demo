@@ -19,10 +19,21 @@ param appSettings object = {}
 @description('Target port for ingress')
 param targetPort int = 8000
 
+@description('ACR login server')
+param registryServer string = ''
+
+@description('ACR name for admin credentials')
+param registryName string = ''
+
 var envVars = [for key in objectKeys(appSettings): {
   name: key
   value: appSettings[key]
 }]
+
+// Get ACR resource for admin credentials
+resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = if (!empty(registryName)) {
+  name: registryName
+}
 
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: name
@@ -41,6 +52,19 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         transport: 'auto'
         allowInsecure: false
       }
+      registries: !empty(registryServer) ? [
+        {
+          server: registryServer
+          username: acr.listCredentials().username
+          passwordSecretRef: 'acr-password'
+        }
+      ] : []
+      secrets: !empty(registryServer) ? [
+        {
+          name: 'acr-password'
+          value: acr.listCredentials().passwords[0].value
+        }
+      ] : []
     }
     template: {
       containers: [

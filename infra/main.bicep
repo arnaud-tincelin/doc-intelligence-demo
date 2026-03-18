@@ -13,6 +13,7 @@ param documentIntelligenceName string = ''
 param aiFoundryHubName string = ''
 param aiFoundryProjectName string = ''
 param containerAppEnvName string = ''
+param containerRegistryName string = ''
 
 @description('OpenAI model deployment name')
 param openAiModelName string = 'gpt-4o'
@@ -59,6 +60,15 @@ module aiFoundry 'modules/ai-foundry.bicep' = {
   }
 }
 
+module containerRegistry 'modules/container-registry.bicep' = {
+  name: 'containerRegistry'
+  params: {
+    name: !empty(containerRegistryName) ? containerRegistryName : '${abbrs.containerRegistry}${resourceToken}'
+    location: location
+    tags: tags
+  }
+}
+
 module containerAppEnv 'modules/container-app-environment.bicep' = {
   name: 'containerAppEnv'
   params: {
@@ -75,6 +85,8 @@ module backend 'modules/container-app.bicep' = {
     location: location
     tags: union(tags, { 'azd-service-name': 'backend' })
     containerAppEnvId: containerAppEnv.outputs.id
+    registryServer: containerRegistry.outputs.loginServer
+    registryName: containerRegistry.outputs.name
     appSettings: {
       AZURE_STORAGE_ACCOUNT_NAME: storage.outputs.name
       AZURE_STORAGE_CONTAINER_NAME: storage.outputs.containerName
@@ -118,4 +130,5 @@ output AZURE_STORAGE_CONTAINER_NAME string = storage.outputs.containerName
 output AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT string = documentIntelligence.outputs.endpoint
 output AZURE_AI_INFERENCE_ENDPOINT string = aiFoundry.outputs.aiServicesEndpoint
 output AZURE_AI_MODEL_DEPLOYMENT string = aiFoundry.outputs.deploymentName
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.outputs.loginServer
 output BACKEND_URL string = backend.outputs.uri
