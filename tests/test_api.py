@@ -47,14 +47,14 @@ class TestAnalyzeEndpoint:
         assert response.status_code == 400
         assert "image" in response.json()["detail"].lower()
 
-    @patch("app.get_openai_client")
+    @patch("app.get_inference_client")
     @patch("app.get_document_intelligence_client")
     @patch("app.get_blob_service_client")
     def test_analyze_returns_result(
         self,
         mock_blob,
         mock_doc_intel,
-        mock_openai,
+        mock_inference,
         client,
         sample_image_bytes,
     ):
@@ -74,8 +74,8 @@ class TestAnalyzeEndpoint:
         mock_doc_client.begin_analyze_document.return_value = mock_poller
         mock_doc_intel.return_value = mock_doc_client
 
-        # Mock OpenAI
-        mock_oai_client = MagicMock()
+        # Mock AI Foundry inference client
+        mock_inf_client = MagicMock()
         mock_choice = MagicMock()
         mock_choice.message.content = json.dumps(
             {
@@ -91,8 +91,8 @@ class TestAnalyzeEndpoint:
         )
         mock_response = MagicMock()
         mock_response.choices = [mock_choice]
-        mock_oai_client.chat.completions.create.return_value = mock_response
-        mock_openai.return_value = mock_oai_client
+        mock_inf_client.complete.return_value = mock_response
+        mock_inference.return_value = mock_inf_client
 
         response = client.post(
             "/analyze",
@@ -109,14 +109,14 @@ class TestAnalyzeEndpoint:
         assert len(data["issues_found"]) == 1
         assert "Missing ground connection" in data["issues_found"][0]
 
-    @patch("app.get_openai_client")
+    @patch("app.get_inference_client")
     @patch("app.get_document_intelligence_client")
     @patch("app.get_blob_service_client")
     def test_analyze_handles_service_errors(
         self,
         mock_blob,
         mock_doc_intel,
-        mock_openai,
+        mock_inference,
         client,
         sample_image_bytes,
     ):
@@ -125,8 +125,8 @@ class TestAnalyzeEndpoint:
         mock_doc_intel.return_value.begin_analyze_document.side_effect = Exception(
             "Doc Intel unavailable"
         )
-        mock_openai.return_value.chat.completions.create.side_effect = Exception(
-            "OpenAI unavailable"
+        mock_inference.return_value.complete.side_effect = Exception(
+            "AI Foundry unavailable"
         )
 
         response = client.post(
@@ -144,10 +144,10 @@ class TestAnalyzeEndpoint:
 class TestChatEndpoint:
     """Tests for the /chat endpoint."""
 
-    @patch("app.get_openai_client")
-    def test_chat_returns_reply(self, mock_openai, client):
-        # Mock OpenAI
-        mock_oai_client = MagicMock()
+    @patch("app.get_inference_client")
+    def test_chat_returns_reply(self, mock_inference, client):
+        # Mock AI Foundry inference client
+        mock_inf_client = MagicMock()
         mock_choice = MagicMock()
         mock_choice.message.content = (
             "The missing ground connection should be added at the bottom of the circuit. "
@@ -155,8 +155,8 @@ class TestChatEndpoint:
         )
         mock_response = MagicMock()
         mock_response.choices = [mock_choice]
-        mock_oai_client.chat.completions.create.return_value = mock_response
-        mock_openai.return_value = mock_oai_client
+        mock_inf_client.complete.return_value = mock_response
+        mock_inference.return_value = mock_inf_client
 
         response = client.post(
             "/chat",
@@ -175,15 +175,15 @@ class TestChatEndpoint:
         # Should detect fix suggestion
         assert data["suggested_fix"] is not None
 
-    @patch("app.get_openai_client")
-    def test_chat_with_conversation_history(self, mock_openai, client):
-        mock_oai_client = MagicMock()
+    @patch("app.get_inference_client")
+    def test_chat_with_conversation_history(self, mock_inference, client):
+        mock_inf_client = MagicMock()
         mock_choice = MagicMock()
         mock_choice.message.content = "Yes, you should use a 10kΩ resistor for the pull-down."
         mock_response = MagicMock()
         mock_response.choices = [mock_choice]
-        mock_oai_client.chat.completions.create.return_value = mock_response
-        mock_openai.return_value = mock_oai_client
+        mock_inf_client.complete.return_value = mock_response
+        mock_inference.return_value = mock_inf_client
 
         response = client.post(
             "/chat",
@@ -201,9 +201,9 @@ class TestChatEndpoint:
         data = response.json()
         assert "reply" in data
 
-    @patch("app.get_openai_client")
-    def test_chat_handles_openai_error(self, mock_openai, client):
-        mock_openai.return_value.chat.completions.create.side_effect = Exception(
+    @patch("app.get_inference_client")
+    def test_chat_handles_openai_error(self, mock_inference, client):
+        mock_inference.return_value.complete.side_effect = Exception(
             "Service error"
         )
 
@@ -225,14 +225,14 @@ class TestGetAnalysis:
         response = client.get("/analysis/nonexistent-id")
         assert response.status_code == 404
 
-    @patch("app.get_openai_client")
+    @patch("app.get_inference_client")
     @patch("app.get_document_intelligence_client")
     @patch("app.get_blob_service_client")
     def test_get_analysis_after_upload(
         self,
         mock_blob,
         mock_doc_intel,
-        mock_openai,
+        mock_inference,
         client,
         sample_image_bytes,
     ):
@@ -251,15 +251,15 @@ class TestGetAnalysis:
         mock_doc_client.begin_analyze_document.return_value = mock_poller
         mock_doc_intel.return_value = mock_doc_client
 
-        mock_oai_client = MagicMock()
+        mock_inf_client = MagicMock()
         mock_choice = MagicMock()
         mock_choice.message.content = json.dumps(
             {"description": "Test circuit", "issues": []}
         )
         mock_response = MagicMock()
         mock_response.choices = [mock_choice]
-        mock_oai_client.chat.completions.create.return_value = mock_response
-        mock_openai.return_value = mock_oai_client
+        mock_inf_client.complete.return_value = mock_response
+        mock_inference.return_value = mock_inf_client
 
         # Upload and analyze
         upload_response = client.post(

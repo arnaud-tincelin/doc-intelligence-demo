@@ -21,6 +21,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -28,9 +31,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd src/backend
-          pip install -r requirements.txt
-          pip install pytest httpx
+          uv pip install --system -r src/backend/requirements.txt
+          uv pip install --system pytest httpx
 
       - name: Generate test dataset
         run: python dataset/generate_samples.py
@@ -62,13 +64,16 @@ jobs:
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install dataset dependencies
-        run: pip install "Pillow>=10.4.0"
+        run: uv pip install --system "Pillow>=10.4.0"
 
       - name: Generate test dataset
         run: python dataset/generate_samples.py
@@ -90,6 +95,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -97,9 +105,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd src/backend
-          pip install -r requirements.txt
-          pip install pytest httpx
+          uv pip install --system -r src/backend/requirements.txt
+          uv pip install --system pytest httpx
 
       - name: Generate test dataset
         run: python dataset/generate_samples.py

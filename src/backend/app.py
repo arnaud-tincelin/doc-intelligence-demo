@@ -1,7 +1,6 @@
-"""Azure Document Intelligence + OpenAI Demo Backend."""
+"""Azure Document Intelligence + AI Foundry Demo Backend."""
 
 import base64
-import io
 import json
 import logging
 import os
@@ -10,14 +9,21 @@ from typing import Optional
 
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.ai.documentintelligence.models import AnalyzeDocumentRequest, DocumentAnalysisFeature
+from azure.ai.inference import ChatCompletionsClient
+from azure.ai.inference.models import (
+    AssistantMessage,
+    ImageContentItem,
+    ImageUrl,
+    SystemMessage,
+    TextContentItem,
+    UserMessage,
+)
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from openai import AzureOpenAI
-from PIL import Image
 from pydantic import BaseModel
 
 logging.basicConfig(level=logging.INFO)
@@ -36,8 +42,8 @@ app.add_middleware(
 AZURE_STORAGE_ACCOUNT_NAME = os.getenv("AZURE_STORAGE_ACCOUNT_NAME", "")
 AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME", "uploads")
 AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT", "")
-AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "")
-AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o")
+AZURE_AI_INFERENCE_ENDPOINT = os.getenv("AZURE_AI_INFERENCE_ENDPOINT", "")
+AZURE_AI_MODEL_DEPLOYMENT = os.getenv("AZURE_AI_MODEL_DEPLOYMENT", "gpt-4o")
 
 credential = DefaultAzureCredential()
 
@@ -56,13 +62,11 @@ def get_document_intelligence_client() -> DocumentIntelligenceClient:
     )
 
 
-def get_openai_client() -> AzureOpenAI:
-    """Create an AzureOpenAI client using managed identity."""
-    token_provider = credential.get_token("https://cognitiveservices.azure.com/.default")
-    return AzureOpenAI(
-        azure_endpoint=AZURE_OPENAI_ENDPOINT,
-        azure_ad_token=token_provider.token,
-        api_version="2024-10-21",
+def get_inference_client() -> ChatCompletionsClient:
+    """Create a ChatCompletionsClient using managed identity (Azure AI Foundry)."""
+    return ChatCompletionsClient(
+        endpoint=AZURE_AI_INFERENCE_ENDPOINT,
+        credential=credential,
     )
 
 
@@ -189,46 +193,36 @@ async def analyze_image(file: UploadFile = File(...)):
     except Exception as e:
         logger.warning("Document Intelligence analysis failed: %s", e)
 
-    # Describe with OpenAI GPT-4o Vision
+    # Describe with AI Foundry (GPT-4o Vision via azure-ai-inference)
     description = ""
     issues_found = []
     try:
-        openai_client = get_openai_client()
+        inference_client = get_inference_client()
         b64_image = base64.b64encode(image_bytes).decode("utf-8")
 
         # Determine mime type
         mime_type = file.content_type or "image/png"
 
-        response = openai_client.chat.completions.create(
-            model=AZURE_OPENAI_DEPLOYMENT_NAME,
+        response = inference_client.complete(
+            model=AZURE_AI_MODEL_DEPLOYMENT,
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are an expert electrical engineer analyzing electrical schematics. "
-                        "Analyze the provided image and: "
-                        "1) Describe what the electrical schema shows. "
-                        "2) Identify any issues, errors, or problems in the schema. "
-                        "3) For each issue, describe its approximate location in the image. "
-                        "Return your response as JSON with keys: "
-                        '"description" (string), "issues" (array of {"issue": str, "location": str, "severity": str}).'
+                SystemMessage(content=(
+                    "You are an expert electrical engineer analyzing electrical schematics. "
+                    "Analyze the provided image and: "
+                    "1) Describe what the electrical schema shows. "
+                    "2) Identify any issues, errors, or problems in the schema. "
+                    "3) For each issue, describe its approximate location in the image. "
+                    "Return your response as JSON with keys: "
+                    '"description" (string), "issues" (array of {"issue": str, "location": str, "severity": str}).'
+                )),
+                UserMessage(content=[
+                    TextContentItem(
+                        text="Analyze this electrical schema image. Identify all components, connections, and any issues.",
                     ),
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "Analyze this electrical schema image. Identify all components, connections, and any issues.",
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:{mime_type};base64,{b64_image}",
-                            },
-                        },
-                    ],
-                },
+                    ImageContentItem(
+                        image_url=ImageUrl(url=f"data:{mime_type};base64,{b64_image}"),
+                    ),
+                ]),
             ],
             max_tokens=2000,
             response_format={"type": "json_object"},
@@ -251,10 +245,10 @@ async def analyze_image(file: UploadFile = File(...)):
                 "severity": issue.get("severity", "info"),
             })
 
-        logger.info("OpenAI analysis complete: %d issues found", len(issues_found))
+        logger.info("AI Foundry analysis complete: %d issues found", len(issues_found))
     except Exception as e:
-        logger.warning("OpenAI analysis failed: %s", e)
-        description = "Analysis unavailable - OpenAI service error"
+        logger.warning("AI Foundry analysis failed: %s", e)
+        description = "Analysis unavailable - AI Foundry service error"
 
     result = AnalysisResult(
         image_id=image_id,
@@ -287,39 +281,38 @@ async def chat_with_agent(request: ChatRequest):
         )
 
     try:
-        openai_client = get_openai_client()
+        inference_client = get_inference_client()
 
         messages = [
-            {
-                "role": "system",
-                "content": (
-                    "You are an expert electrical engineer assistant. You help users understand "
-                    "and fix issues in electrical schematics. You can:\n"
-                    "1) Explain issues found in the schema\n"
-                    "2) Suggest specific fixes for identified problems\n"
-                    "3) Describe how an updated schema should look to resolve issues\n"
-                    "4) Provide step-by-step instructions for making corrections\n\n"
-                    "When suggesting fixes, be specific about component values, connections, "
-                    "and wiring changes. Format your suggestions clearly.\n\n"
-                    "If asked to produce an updated schema, describe it textually with specific "
-                    "changes needed, component placements, and connection modifications.\n\n"
-                    f"Context from image analysis:\n{context}"
-                ),
-            },
+            SystemMessage(content=(
+                "You are an expert electrical engineer assistant. You help users understand "
+                "and fix issues in electrical schematics. You can:\n"
+                "1) Explain issues found in the schema\n"
+                "2) Suggest specific fixes for identified problems\n"
+                "3) Describe how an updated schema should look to resolve issues\n"
+                "4) Provide step-by-step instructions for making corrections\n\n"
+                "When suggesting fixes, be specific about component values, connections, "
+                "and wiring changes. Format your suggestions clearly.\n\n"
+                "If asked to produce an updated schema, describe it textually with specific "
+                "changes needed, component placements, and connection modifications.\n\n"
+                f"Context from image analysis:\n{context}"
+            )),
         ]
 
         # Add conversation history
         for msg in request.conversation_history:
-            messages.append({
-                "role": msg.get("role", "user"),
-                "content": msg.get("content", ""),
-            })
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role == "user":
+                messages.append(UserMessage(content=content))
+            else:
+                messages.append(AssistantMessage(content=content))
 
         # Add current message
-        messages.append({"role": "user", "content": request.message})
+        messages.append(UserMessage(content=request.message))
 
-        response = openai_client.chat.completions.create(
-            model=AZURE_OPENAI_DEPLOYMENT_NAME,
+        response = inference_client.complete(
+            model=AZURE_AI_MODEL_DEPLOYMENT,
             messages=messages,
             max_tokens=2000,
         )

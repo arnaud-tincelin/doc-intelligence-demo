@@ -1,0 +1,27 @@
+[project]
+name = "doc-intelligence-demo"
+version = "1.0.0"
+description = "Electrical schema analysis demo with Azure Document Intelligence + AI Foundry"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "gunicorn>=22.0.0",
+    "python-multipart>=0.0.9",
+    "azure-ai-documentintelligence>=1.0.0",
+    "azure-ai-inference>=1.0.0b9",
+    "azure-storage-blob>=12.22.0",
+    "azure-identity>=1.17.0",
+    "Pillow>=10.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "httpx>=0.27.0",
+    "ruff>=0.8.0",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120

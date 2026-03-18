@@ -4,10 +4,8 @@ metadata:
   template: doc-intelligence-demo
 services:
   backend:
-    project: ./src/backend
+    project: .
     language: py
-    host: appservice
-    hooks:
-      prepackage:
-        shell: sh
-        run: cp -r ../frontend ./frontend
+    host: containerapp
+    docker:
+      path: ./Dockerfile

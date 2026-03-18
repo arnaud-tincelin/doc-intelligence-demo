@@ -1,0 +1,45 @@
+{
+  "name": "Electrical Schema Analyzer",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "features": {
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/azure/azure-dev/azd:latest": {},
+    "ghcr.io/astral-sh/uv-devcontainer-feature/uv:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "postCreateCommand": "uv pip install --system -r src/backend/requirements.txt && uv pip install --system pytest httpx && python dataset/generate_samples.py",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "ms-azuretools.vscode-azurefunctions",
+        "ms-azuretools.vscode-bicep",
+        "ms-azuretools.azure-dev"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.languageServer": "Pylance",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true
+        }
+      }
+    }
+  },
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": {
+      "label": "Backend API",
+      "onAutoForward": "notify"
+    }
+  },
+  "remoteEnv": {
+    "AZURE_STORAGE_ACCOUNT_NAME": "",
+    "AZURE_STORAGE_CONTAINER_NAME": "uploads",
+    "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT": "",
+    "AZURE_AI_INFERENCE_ENDPOINT": "",
+    "AZURE_AI_MODEL_DEPLOYMENT": "gpt-4o"
+  }
+}
