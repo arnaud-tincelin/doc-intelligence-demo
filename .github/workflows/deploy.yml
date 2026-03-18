@@ -39,6 +39,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: test-unit
+    environment: dev
     outputs:
       backend_url: ${{ steps.deploy.outputs.BACKEND_URL }}
     steps:
