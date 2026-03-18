@@ -1,0 +1,8 @@
+{
+  "cognitiveServicesFormRecognizer": "cog-fr-",
+  "storageStorageAccounts": "st",
+  "aiServices": "ais-",
+  "containerAppsEnvironment": "cae-",
+  "containerApps": "ca-",
+  "containerRegistry": "cr"
+}

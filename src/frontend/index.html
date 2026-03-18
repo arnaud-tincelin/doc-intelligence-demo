@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electrical Schema Analyzer</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>⚡ Electrical Schema Analyzer</h1>
+        <p>Upload an electrical schema image for AI-powered analysis</p>
+    </header>
+
+    <main>
+        <section id="upload-section" class="card">
+            <h2>Upload Schema</h2>
+            <div id="drop-zone" class="drop-zone">
+                <p>📁 Drag & drop an image here, or click to select</p>
+                <input type="file" id="file-input" accept="image/*" hidden>
+            </div>
+            <div id="preview-container" class="hidden">
+                <img id="image-preview" alt="Schema preview">
+                <button id="analyze-btn" class="btn primary">🔍 Analyze Schema</button>
+            </div>
+            <div id="loading" class="hidden">
+                <div class="spinner"></div>
+                <p>Analyzing schema...</p>
+            </div>
+        </section>
+
+        <section id="results-section" class="card hidden">
+            <h2>Analysis Results</h2>
+            <div id="results-content">
+                <div id="description-box">
+                    <h3>📝 Description</h3>
+                    <p id="description-text"></p>
+                </div>
+                <div id="issues-box">
+                    <h3>⚠️ Issues Found</h3>
+                    <ul id="issues-list"></ul>
+                </div>
+                <div id="bbox-box">
+                    <h3>📐 Detected Regions</h3>
+                    <div id="bbox-canvas-container">
+                        <canvas id="bbox-canvas"></canvas>
+                    </div>
+                    <p id="bbox-count"></p>
+                </div>
+            </div>
+        </section>
+
+        <section id="chat-section" class="card hidden">
+            <h2>💬 Chat with AI Agent</h2>
+            <p class="subtitle">Ask the agent to explain issues or produce an updated schema</p>
+            <div id="chat-messages"></div>
+            <div id="chat-input-container">
+                <input type="text" id="chat-input" placeholder="Ask about the schema or request a fix...">
+                <button id="chat-send" class="btn primary">Send</button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Powered by Azure Document Intelligence & Microsoft AI Foundry</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
