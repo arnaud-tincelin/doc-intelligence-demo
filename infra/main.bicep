@@ -10,8 +10,7 @@ param location string
 param backendContainerAppName string = ''
 param storageAccountName string = ''
 param documentIntelligenceName string = ''
-param aiFoundryHubName string = ''
-param aiFoundryProjectName string = ''
+param aiServicesName string = ''
 param containerAppEnvName string = ''
 param containerRegistryName string = ''
 
@@ -46,14 +45,12 @@ module documentIntelligence 'modules/document-intelligence.bicep' = {
   }
 }
 
-module aiFoundry 'modules/ai-foundry.bicep' = {
-  name: 'aiFoundry'
+module aiServices 'modules/ai-services.bicep' = {
+  name: 'aiServices'
   params: {
-    hubName: !empty(aiFoundryHubName) ? aiFoundryHubName : '${abbrs.aiFoundryHub}${resourceToken}'
-    projectName: !empty(aiFoundryProjectName) ? aiFoundryProjectName : '${abbrs.aiFoundryProject}${resourceToken}'
+    name: !empty(aiServicesName) ? aiServicesName : '${abbrs.aiServices}${resourceToken}'
     location: location
     tags: tags
-    storageAccountId: storage.outputs.id
     modelName: openAiModelName
     modelVersion: openAiModelVersion
     deploymentCapacity: openAiDeploymentCapacity
@@ -91,8 +88,8 @@ module backend 'modules/container-app.bicep' = {
       AZURE_STORAGE_ACCOUNT_NAME: storage.outputs.name
       AZURE_STORAGE_CONTAINER_NAME: storage.outputs.containerName
       AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT: documentIntelligence.outputs.endpoint
-      AZURE_AI_INFERENCE_ENDPOINT: aiFoundry.outputs.aiServicesEndpoint
-      AZURE_AI_MODEL_DEPLOYMENT: aiFoundry.outputs.deploymentName
+      AZURE_AI_INFERENCE_ENDPOINT: aiServices.outputs.endpoint
+      AZURE_AI_MODEL_DEPLOYMENT: aiServices.outputs.deploymentName
     }
   }
 }
@@ -116,8 +113,8 @@ module docIntelligenceRoleBackend 'modules/role-assignment.bicep' = {
   }
 }
 
-module aiFoundryRoleBackend 'modules/role-assignment.bicep' = {
-  name: 'aiFoundryRoleBackend'
+module aiServicesRoleBackend 'modules/role-assignment.bicep' = {
+  name: 'aiServicesRoleBackend'
   params: {
     principalId: backend.outputs.identityPrincipalId
     roleDefinitionId: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd' // Cognitive Services OpenAI User
@@ -128,7 +125,7 @@ module aiFoundryRoleBackend 'modules/role-assignment.bicep' = {
 output AZURE_STORAGE_ACCOUNT_NAME string = storage.outputs.name
 output AZURE_STORAGE_CONTAINER_NAME string = storage.outputs.containerName
 output AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT string = documentIntelligence.outputs.endpoint
-output AZURE_AI_INFERENCE_ENDPOINT string = aiFoundry.outputs.aiServicesEndpoint
-output AZURE_AI_MODEL_DEPLOYMENT string = aiFoundry.outputs.deploymentName
+output AZURE_AI_INFERENCE_ENDPOINT string = aiServices.outputs.endpoint
+output AZURE_AI_MODEL_DEPLOYMENT string = aiServices.outputs.deploymentName
 output AZURE_CONTAINER_REGISTRY_ENDPOINT string = containerRegistry.outputs.loginServer
 output BACKEND_URL string = backend.outputs.uri

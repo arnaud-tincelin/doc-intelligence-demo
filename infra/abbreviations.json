@@ -1,8 +1,7 @@
 {
   "cognitiveServicesFormRecognizer": "cog-fr-",
   "storageStorageAccounts": "st",
-  "aiFoundryHub": "aihub-",
-  "aiFoundryProject": "aiproj-",
+  "aiServices": "ais-",
   "containerAppsEnvironment": "cae-",
   "containerApps": "ca-",
   "containerRegistry": "cr"
