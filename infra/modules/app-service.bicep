@@ -20,7 +20,7 @@ param runtimeVersion string = '3.11'
 param appSettings object = {}
 
 @description('Startup command')
-param startupCommand string = 'gunicorn --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 app:app'
+param startupCommand string = 'gunicorn --workers 2 --timeout 120 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 app:app'
 
 var appSettingsArray = [for key in objectKeys(appSettings): {
   name: key

@@ -49,6 +49,17 @@ def analyze_with_retry(client, filepath, filename, retries=3, delay=10):
     return response
 
 
+def chat_with_retry(client, payload, retries=3, delay=15):
+    """Call /chat with retries to handle transient 502 (gunicorn timeout) errors."""
+    response = None
+    for _ in range(retries):
+        response = client.post("/chat", json=payload)
+        if response.status_code == 200:
+            return response
+        time.sleep(delay)
+    return response
+
+
 @pytest.fixture(scope="module")
 def analyzed_image(api_client, sample_image_path):
     """Analyze a sample image once and share the result across chat tests."""
@@ -119,16 +130,16 @@ class TestE2EChat:
         """Test requesting the agent to produce an updated schema."""
         image_id = analyzed_image["image_id"]
 
-        chat_response = api_client.post(
-            "/chat",
-            json={
+        chat_response = chat_with_retry(
+            api_client,
+            {
                 "message": "Please produce an updated schema that fixes all the issues you found.",
                 "image_id": image_id,
                 "conversation_history": [],
             },
         )
 
-        assert chat_response.status_code == 200
+        assert chat_response.status_code == 200, f"Chat failed: {chat_response.status_code} {chat_response.text}"
         data = chat_response.json()
         assert "reply" in data
         assert len(data["reply"]) > 50  # Should be a substantial response
