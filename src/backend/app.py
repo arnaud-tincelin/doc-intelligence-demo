@@ -64,9 +64,12 @@ def get_document_intelligence_client() -> DocumentIntelligenceClient:
 
 def get_inference_client() -> ChatCompletionsClient:
     """Create a ChatCompletionsClient using managed identity (Azure AI Foundry)."""
+    # For Azure AI Services, use the OpenAI-compatible endpoint
+    endpoint = AZURE_AI_INFERENCE_ENDPOINT.rstrip("/")
     return ChatCompletionsClient(
-        endpoint=AZURE_AI_INFERENCE_ENDPOINT,
+        endpoint=f"{endpoint}/openai/deployments/{AZURE_AI_MODEL_DEPLOYMENT}",
         credential=credential,
+        credential_scopes=["https://cognitiveservices.azure.com/.default"],
     )
 
 
@@ -204,7 +207,6 @@ async def analyze_image(file: UploadFile = File(...)):
         mime_type = file.content_type or "image/png"
 
         response = inference_client.complete(
-            model=AZURE_AI_MODEL_DEPLOYMENT,
             messages=[
                 SystemMessage(content=(
                     "You are an expert electrical engineer analyzing electrical schematics. "
@@ -312,7 +314,6 @@ async def chat_with_agent(request: ChatRequest):
         messages.append(UserMessage(content=request.message))
 
         response = inference_client.complete(
-            model=AZURE_AI_MODEL_DEPLOYMENT,
             messages=messages,
             max_tokens=2000,
         )
