@@ -1,5 +1,3 @@
-targetScope = 'subscription'
-
 @minLength(1)
 @maxLength(64)
 @description('Name of the environment')
@@ -25,18 +23,11 @@ param openAiModelVersion string = '2024-11-20'
 param openAiDeploymentCapacity int = 10
 
 var abbrs = loadJsonContent('./abbreviations.json')
-var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
+var resourceToken = toLower(uniqueString(resourceGroup().id, environmentName, location))
 var tags = { 'azd-env-name': environmentName }
-
-resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
-  name: 'rg-${environmentName}'
-  location: location
-  tags: tags
-}
 
 module storage 'modules/storage.bicep' = {
   name: 'storage'
-  scope: rg
   params: {
     name: !empty(storageAccountName) ? storageAccountName : '${abbrs.storageStorageAccounts}${resourceToken}'
     location: location
@@ -46,7 +37,6 @@ module storage 'modules/storage.bicep' = {
 
 module documentIntelligence 'modules/document-intelligence.bicep' = {
   name: 'documentIntelligence'
-  scope: rg
   params: {
     name: !empty(documentIntelligenceName) ? documentIntelligenceName : '${abbrs.cognitiveServicesFormRecognizer}${resourceToken}'
     location: location
@@ -56,7 +46,6 @@ module documentIntelligence 'modules/document-intelligence.bicep' = {
 
 module openAi 'modules/openai.bicep' = {
   name: 'openAi'
-  scope: rg
   params: {
     name: !empty(openAiName) ? openAiName : '${abbrs.cognitiveServicesOpenAI}${resourceToken}'
     location: location
@@ -69,7 +58,6 @@ module openAi 'modules/openai.bicep' = {
 
 module appServicePlan 'modules/app-service-plan.bicep' = {
   name: 'appServicePlan'
-  scope: rg
   params: {
     name: !empty(appServicePlanName) ? appServicePlanName : '${abbrs.webServerFarms}${resourceToken}'
     location: location
@@ -79,7 +67,6 @@ module appServicePlan 'modules/app-service-plan.bicep' = {
 
 module backend 'modules/app-service.bicep' = {
   name: 'backend'
-  scope: rg
   params: {
     name: !empty(backendServiceName) ? backendServiceName : '${abbrs.webSitesAppService}backend-${resourceToken}'
     location: location
@@ -101,7 +88,6 @@ module backend 'modules/app-service.bicep' = {
 // Role assignments
 module storageRoleBackend 'modules/role-assignment.bicep' = {
   name: 'storageRoleBackend'
-  scope: rg
   params: {
     principalId: backend.outputs.identityPrincipalId
     roleDefinitionId: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
@@ -111,7 +97,6 @@ module storageRoleBackend 'modules/role-assignment.bicep' = {
 
 module docIntelligenceRoleBackend 'modules/role-assignment.bicep' = {
   name: 'docIntelligenceRoleBackend'
-  scope: rg
   params: {
     principalId: backend.outputs.identityPrincipalId
     roleDefinitionId: 'a97b65f3-24c7-4388-baec-2e87135dc908' // Cognitive Services User
@@ -121,7 +106,6 @@ module docIntelligenceRoleBackend 'modules/role-assignment.bicep' = {
 
 module openAiRoleBackend 'modules/role-assignment.bicep' = {
   name: 'openAiRoleBackend'
-  scope: rg
   params: {
     principalId: backend.outputs.identityPrincipalId
     roleDefinitionId: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd' // Cognitive Services OpenAI User

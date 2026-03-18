@@ -78,6 +78,7 @@ jobs:
           AZURE_ENV_NAME: doc-intelligence-demo
           AZURE_LOCATION: swedencentral
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP: doc-intelligence-demo
 
   test-e2e:
     runs-on: ubuntu-latest
