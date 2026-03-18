@@ -202,7 +202,7 @@ class TestChatEndpoint:
         assert "reply" in data
 
     @patch("app.get_inference_client")
-    def test_chat_handles_openai_error(self, mock_inference, client):
+    def test_chat_handles_inference_error(self, mock_inference, client):
         mock_inference.return_value.complete.side_effect = Exception(
             "Service error"
         )
