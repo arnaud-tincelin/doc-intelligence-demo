@@ -36,7 +36,8 @@ def sample_image_path():
 
 def analyze_with_retry(client, filepath, filename, retries=3, delay=10):
     """Call /analyze with retries to handle transient failures."""
-    for attempt in range(retries):
+    response = None
+    for _ in range(retries):
         with open(filepath, "rb") as f:
             response = client.post(
                 "/analyze",
