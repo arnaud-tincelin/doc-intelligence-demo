@@ -37,7 +37,7 @@ def sample_image_path():
 def analyze_with_retry(client, filepath, filename, retries=3, delay=10):
     """Call /analyze with retries to handle transient failures."""
     response = None
-    for _ in range(retries):
+    for i in range(retries):
         with open(filepath, "rb") as f:
             response = client.post(
                 "/analyze",
@@ -45,18 +45,20 @@ def analyze_with_retry(client, filepath, filename, retries=3, delay=10):
             )
         if response.status_code == 200:
             return response
-        time.sleep(delay)
+        if i < retries - 1:
+            time.sleep(delay)
     return response
 
 
 def chat_with_retry(client, payload, retries=3, delay=15):
     """Call /chat with retries to handle transient 502 (gunicorn timeout) errors."""
     response = None
-    for _ in range(retries):
+    for i in range(retries):
         response = client.post("/chat", json=payload)
         if response.status_code == 200:
             return response
-        time.sleep(delay)
+        if i < retries - 1:
+            time.sleep(delay)
     return response
 
 
